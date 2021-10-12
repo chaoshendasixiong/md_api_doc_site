@@ -14,6 +14,7 @@ Vue.component('my-md', {
         self.mdContent = '';
         return
       }
+      this.init_marked();
       axios
         .get(self.md_name)
         .then(function (response) {
@@ -27,9 +28,14 @@ Vue.component('my-md', {
         });
     }
   },
-  mounted: function () {
-    const renderer = {
-      heading(text, level, raw, slugger) {
+  methods: {
+    init_marked() {
+      var pos = this.md_name.lastIndexOf('/');
+      var path =  this.md_name.substring(0, pos + 1);
+
+      const renderer = new marked.Renderer();
+      const originalRendererImage = renderer.image.bind(renderer);
+      renderer.heading = function(text, level, raw, slugger) {
         if (level == 3) {
           this.header = 3
           return `
@@ -49,11 +55,16 @@ Vue.component('my-md', {
           }
         }
         return false;
+      },
+      renderer.image = function(href, title, text) {
+        if(!href.match("^(http|https|ftp)://.*$") )              
+          href = path + href;
+        return originalRendererImage(href, title, text);
       }
-    };
-    marked.use({
-      renderer,
-      breaks: true
-    });
+      marked.use({
+        renderer,
+        breaks: false
+      });
+    },
   },
 })
